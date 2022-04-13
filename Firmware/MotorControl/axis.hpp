@@ -101,6 +101,7 @@ public:
     struct CAN_t {
         uint32_t last_heartbeat = 0;
         uint32_t last_encoder = 0;
+        uint32_t last_health = 0;
     };
 
     Axis(int axis_num,

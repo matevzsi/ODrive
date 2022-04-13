@@ -380,6 +380,21 @@ uint32_t CANSimple::service_stack() {
                 int nextAxisService = a.can_.last_encoder + a.config_.can.encoder_rate_ms - now;
                 nextServiceTime = std::min(nextServiceTime, static_cast<uint32_t>(std::max(0, nextAxisService)));
             }
+
+            if (true) {
+                // Send axis health report (temperature, current)
+                uint32_t health_report_ms = 500;
+
+                if ((now - a.can_.last_health) >= health_report_ms) {
+                    if (send_health_report(a))
+                        a.can_.last_health = now;
+                }
+
+                int nextAxisService = a.can_.last_health + health_report_ms - now;
+                nextServiceTime = std::min(nextServiceTime, static_cast<uint32_t>(std::max(0, nextAxisService)));
+            }
+
+            
         }
     }
 
@@ -411,6 +426,22 @@ bool CANSimple::send_heartbeat(const Axis& axis) {
     can_setSignal(txmsg, encoderFlags, 48, 8, true);
     can_setSignal(txmsg, controllerFlags, 56, 8, true);
     // can_setSignal(txmsg, axis.current_state_, 32, 32, true);
+
+    return canbus_->send_message(txmsg);
+}
+
+bool CANSimple::send_health_report(const Axis& axis) {
+    can_Message_t txmsg;
+    txmsg.id = axis.config_.can.node_id << NUM_CMD_ID_BITS;
+    txmsg.id += MSG_ODRIVE_HEALTH;  // health ID
+    txmsg.isExt = axis.config_.can.is_extended;
+    txmsg.len = 8;
+
+    // Current motor temperature
+    memcpy(txmsg.buf, &axis.motor_.motor_thermistor_.temperature_, 4);
+
+    // Current rotor current / torque
+    memcpy(txmsg.buf + 4, &axis.motor_.current_control_.Iq_measured_, 4);
 
     return canbus_->send_message(txmsg);
 }

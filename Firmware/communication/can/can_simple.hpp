@@ -35,6 +35,8 @@ class CANSimple {
         MSG_SET_LINEAR_COUNT,
         MSG_SET_POS_GAIN,
         MSG_SET_VEL_GAINS,
+
+        MSG_ODRIVE_HEALTH = 32,
         MSG_CO_HEARTBEAT_CMD = 0x700,  // CANOpen NMT Heartbeat  SEND
     };
 
@@ -47,6 +49,7 @@ class CANSimple {
 
     bool renew_subscription(size_t i);
     bool send_heartbeat(const Axis& axis);
+    bool send_health_report(const Axis& axis);
 
     void handle_can_message(const can_Message_t& msg);
 
