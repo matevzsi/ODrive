@@ -65,6 +65,9 @@ void CANSimple::do_command(Axis& axis, const can_Message_t& msg) {
         case MSG_ODRIVE_HEARTBEAT:
             // We don't currently do anything to respond to ODrive heartbeat messages
             break;
+        case MSG_ODRIVE_OPENLOOP_GO:
+            set_axis_openloop_reference(axis, msg);
+            break;
         case MSG_ODRIVE_ESTOP:
             estop_callback(axis, msg);
             break;
@@ -306,6 +309,16 @@ void CANSimple::set_pos_gain_callback(Axis& axis, const can_Message_t& msg) {
 void CANSimple::set_vel_gains_callback(Axis& axis, const can_Message_t& msg) {
     axis.controller_.config_.vel_gain = can_getSignal<float>(msg, 0, 32, true);
     axis.controller_.config_.vel_integrator_gain = can_getSignal<float>(msg, 32, 32, true);
+}
+
+void CANSimple::set_axis_openloop_reference(Axis& axis, const can_Message_t& msg) {
+    if (msg.len < 8) return;
+
+    axis.config_.general_lockin.finish_distance = can_getSignal<float>(msg, 0, 32, true); // in electrical radians
+    axis.config_.general_lockin.vel = can_getSignal<float>(msg, 32, 32, true); // in electrical radians / s
+    axis.config_.general_lockin.finish_on_distance = True;
+
+    axis.requested_state_ = Axis::AXIS_STATE_LOCKIN_SPIN;
 }
 
 bool CANSimple::get_iq_callback(const Axis& axis) {
